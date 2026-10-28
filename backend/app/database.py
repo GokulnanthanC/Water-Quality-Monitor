@@ -2,24 +2,28 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
-# CRITICAL: Never hardcode database credentials
-# Set this in your .env file or environment variables
-DATABASE_URL = os.getenv("DATABASE_URL")
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-if not DATABASE_URL:
-    raise ValueError(
-        "DATABASE_URL environment variable must be set. "
-        "Example: postgresql://username:password@localhost/dbname"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./water_quality.db")
+
+# Create engine with settings based on database type
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}
     )
-
-# Production settings
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,  # Verify connections before using
-    pool_size=10,        # Connection pool size
-    max_overflow=20,     # Max connections beyond pool_size
-    echo=False           # Set to True for SQL debugging
-)
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        echo=False
+    )
 
 SessionLocal = sessionmaker(
     bind=engine,
